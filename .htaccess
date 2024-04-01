@@ -1,0 +1,12 @@
+############################################
+# This redirection is required by Rich3Rest 
+#
+## Redirect /api/a/b/c/d/e/...  to  /api/a/index.php?p1=b&p2=c&p3=d&... (up to 5 key/value pairs)
+#
+RewriteEngine On
+RewriteRule ^api/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/?$ api/$1/index.php?p1=$2&p2=$3&p3=$4&p4=$5&p5=$6 [QSA,L]
+RewriteRule ^api/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/?$ api/$1/index.php?p1=$2&p2=$3&p3=$4&p4=$5 [QSA,L]
+RewriteRule ^api/([^/]+)/([^/]+)/([^/]+)/([^/]+)/?$ api/$1/index.php?p1=$2&p2=$3&p3=$4 [QSA,L]
+RewriteRule ^api/([^/]+)/([^/]+)/([^/]+)/?$ api/$1/index.php?p1=$2&p2=$3 [QSA,L]
+RewriteRule ^api/([^/]+)/([^/]+)/?$ api/$1/index.php?p1=$2 [QSA,L]
+############################################

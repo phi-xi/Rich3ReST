@@ -1,0 +1,46 @@
+body {
+    background-color: #000;
+    color: #fff;
+    font-family: Ubuntu;
+    font-size: 1em;
+}
+h1, h2, h3 {
+    margin-top: 1em;
+    margin-bottom: 0em;
+    font-family: Ubuntu;
+    color: #999;
+}
+h1 {
+    font-size: 2.5em;
+}
+h2 {
+    font-size: 2em;
+    margin-top: 0.5em;
+}
+h3 {
+    font-size: 1.5em;
+}
+input[type="text"], textarea, select, option {
+    font-family: monospace;
+    margin-top: 1em;
+    padding: 0.2em;
+    background-color: #222;
+    color: #1e1;
+}
+button, input[type="submit"] {
+    font-family: Ubuntu;
+    font-size: 1.25em;
+    background-color: #222;
+    color: #F60;
+    border-radius: 1em;
+    margin-top: 1em;
+}
+label {
+    color: #f60;
+}
+button, label, input, textarea, select, option {
+    font-weight: bold;
+}
+.inline {
+    display: inline-block;
+}

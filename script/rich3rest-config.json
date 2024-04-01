@@ -1,0 +1,7 @@
+{
+    "style": {
+        "form": "/style/generic-form.css",
+        "resource": "/style/resource.css"
+    },
+    "form": "/script/rich3rest-form.php"
+}

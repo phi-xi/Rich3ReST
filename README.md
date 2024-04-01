@@ -26,7 +26,7 @@ THE SOFTWARE IS PROVIDED “AS IS”, WITHOUT WARRANTY OF ANY KIND, EXPRESS OR I
 Without modification of 'rich3rest.php' and/or 'rich3rest-config.json', the files
 - rich3rest.php
 - rich3rest-config.json
-- richrest-form.php
+- rich3rest-form.php
 
 
 

@@ -301,7 +301,7 @@
         public static function getRequestURI(){
             $in = "";
             foreach( $_GET as $p => $v ){
-                $in = "$in$v" . DIRECTORY_SEPARATOR;
+                $in = "$in$v/";
             }
             return substr( $in, 0, -1 );
         }

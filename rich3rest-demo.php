@@ -213,7 +213,6 @@
     $api->addResource( new MyResource1() );
     $api->addResource( new MyResource2() );
     $api->addResource( new MyResource3() );
-    $api->setOutputFormat( "HTML" );
     $api->execute();
 
 ?>

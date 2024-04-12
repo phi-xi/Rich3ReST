@@ -34,7 +34,7 @@
     class MyResource1 extends RestResource {
 
         public $data = array(
-            "uri" => "my/box/view",
+            "uri" => "my/box/view",         // full URI is /api/<html|json>/my/box/view
             "methods" => array( "GET", "POST" ),
             "data" => array(),
             "args" => array(

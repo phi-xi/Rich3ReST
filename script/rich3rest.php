@@ -40,10 +40,10 @@
         private $outputStatus = 200;
         private $outputData = array();
         private $resources = [];
-        private $outputFormat = "JSON";
+        private $outputFormat = "json";
         private $outputContentType = array(
-            "JSON" => "application/json",
-            "HTML" => "text/html"
+            "json" => "application/json",
+            "html" => "text/html"
         );
         private $error = array(
             "400" => "Bad Request",
@@ -77,7 +77,7 @@
             $this->outputData = $dataArrayOrString;
         }
         public function setOutputFormat( $format ){
-            $this->outputFormat = $format;
+            $this->outputFormat = strtolower( $format );
         }
         public function sendResponse( $resource=null ){
             if ( $resource !== null ){
@@ -87,10 +87,10 @@
                 unset( $this->outputData[ "data" ][ "originalRequestMethod" ] );
                 array_values( $this->outputData[ "data" ] );
             }
-            if ( $this->outputFormat == "JSON" ){
+            if ( $this->outputFormat == "json" ){
                 $out = $this->getOutputAsJson();
             }
-            if ( $this->outputFormat == "HTML" ){
+            if ( $this->outputFormat == "html" ){
                 $out = $this->getOutputAsHtml();
             }
             http_response_code( $this->outputStatus );
@@ -103,12 +103,14 @@
         public function execute(){
             $isFormReq = RestUtils::requestOriginIsForm();
             $reqMethod = RestUtils::getRequestMethod();
+            $reqResponseFormat = RestUtils::getRequestedResponseFormat();
             $reqURI = RestUtils::getRequestURI();
             $reqBody = RestUtils::getRequestBody();
             $reqParams = array(
                 "body" => array(),
                 "uri" => array()
             );
+            $this->setOutputFormat( $reqResponseFormat );
             $resource = $this->getResourceByURI( $reqURI );
             if ( $resource === null ) $this->throwHttpError(404);
             if ( !$resource->supportsRequestMethod( $reqMethod ) ) $this->throwHttpError(405);
@@ -173,7 +175,7 @@
                 }
                 if ( RestUtils::hasMethodRequestBody( $method ) || $method == "DELETE" ){
                     $formObj = urlencode( json_encode( array(
-                        "action" => "$this->apiURL/$uri",
+                        "action" => "$this->apiURL/$this->outputFormat/$uri",
                         "method" => $method,
                         "fields" => $formFields
                     ) ) );
@@ -181,7 +183,7 @@
                         . $this->config[ "form" ]
                         . "/?template=$formObj'>$uri</a>";
                 } else {
-                    $uri = "<a class='richrest-link' href='$this->apiURL/$uri'>$uri</a>";
+                    $uri = "<a class='richrest-link' href='$this->apiURL/$this->outputFormat/$uri'>$uri</a>";
                 }
                 $links[ $i ][ "uri" ] = $uri;
             }
@@ -301,7 +303,7 @@
         public static function getRequestURI(){
             $in = "";
             foreach( $_GET as $p => $v ){
-                $in = "$in$v/";
+                if ( $p != "p1" ) $in = "$in$v/";
             }
             return substr( $in, 0, -1 );
         }
@@ -346,6 +348,9 @@
                 $out[ $argName ] = $argType;
             }
             return $out;
+        }
+        public static function getRequestedResponseFormat(){
+            return strtoupper( $_GET[ "p1" ] );
         }
     }
 ?>

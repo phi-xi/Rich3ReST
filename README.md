@@ -84,13 +84,6 @@ Set the data for the response.
 |data|The response data, may be string or associative array|
 |RETURN||
 ***
-#### RestAPI::setOutputFormat( String format )
-Specify HTML or JSON representation of the resources of this RestAPI.
-|Parameter|Description|
-|---|---|
-|format|Valid values are "JSON" or "HTML"|
-|RETURN||
-***
 #### RestAPI::sendResponse( RestResource res )
 Send the response to the client (note this includes script termination).
 |Parameter|Description|

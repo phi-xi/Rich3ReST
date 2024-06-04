@@ -117,12 +117,13 @@
             $reqParams[ "uri" ] = $resource->extractUriParameters( $reqURI, $reqMethod );
             if ( $isFormReq ){
                 parse_str( $reqBody, $reqParams[ "body" ] );
+                $reqParams = RestUtils::combineUriAndBodyArgs( $reqParams );
+                $reqParams = $this->sanitizeHtmlSpecialChars( $reqParams );
+                if ( !$resource->inputIsValid( $reqParams, $reqMethod ) ) $this->throwHttpError(400);
             } else {
                 $reqParams[ "body" ] = json_decode( $reqBody, true );
+                $reqParams = RestUtils::combineUriAndBodyArgs( $reqParams );
             }
-            $reqParams = RestUtils::combineUriAndBodyArgs( $reqParams );
-            $reqParams = $this->sanitizeHtmlSpecialChars( $reqParams );
-            if ( !$resource->inputIsValid( $reqParams, $reqMethod ) ) $this->throwHttpError(400);
             $this->outputData[ "links" ] = $resource->getLinks();
             $resource->callback( $this, $reqMethod, $reqParams );
         }

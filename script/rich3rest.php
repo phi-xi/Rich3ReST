@@ -209,9 +209,21 @@
 
     abstract class RestResource {
 
-        function __construct(){}
+        function __construct( $resourceDirectory, $uri ){
+            $this->resDir = $resourceDirectory;
+            $this->data = array(
+                "uri" => $uri,
+                "methods" => $resourceDirectory->getResourceMethods( $uri ),
+                "data" => array(),
+                "args" => $resourceDirectory->getResourceArgs( $uri ),
+                "links" => $resourceDirectory->getResourceLinks( $uri )
+            );
+        }
 
         abstract public function callback( $api, $method, $data );
+
+        public $data = null;
+        public $resDir = null;
 
         public function getURI(){
             $uri = $this->data[ "uri" ];
@@ -286,6 +298,53 @@
 
         private function getAllArgumentsForMethod( $method ){
             return RestUtils::combineUriAndBodyArgs( $this->data[ "args" ][ $method ] );
+        }
+    }
+
+
+
+
+    class RestResourceDirectory {
+
+        function __construct( $config ){
+            $this->config = $config;
+        }
+
+        public $config = array();
+
+        public function getResourceMethods( $uri ){
+            return $this->getArrayElement( $uri, "methods" );
+        }
+        public function getResourceArgs( $uri ){
+            return $this->getArrayElement( $uri, "args" );
+        }
+        public function getResourceArgsForMethod( $uri, $method ){
+            return $this->getResourceArgs( $uri )[ $method ];
+        }
+        public function getResourceLinks( $uri ){
+            $links = array();
+            foreach ( $this->config as $res ){
+                $resUri = $res[ "uri" ];
+                $methods = $this->getResourceMethods( $resUri );
+                foreach ( $methods as $m ){
+                    if ( !( $resUri == $uri && RestUtils::getRequestMethod() == $m ) ){
+                        $links[] = array(
+                            "uri" => $resUri,
+                            "rel" => $res[ "rel" ],
+                            "method" => $m,
+                            "args" => $this->getResourceArgsForMethod( $resUri, $m )
+                        );
+                    }
+                }
+            }
+            return $links;
+        }
+
+        private function getArrayElement( $uri, $key ){
+            foreach ( $this->config as $res ){
+                if ( $res[ "uri" ] == $uri ) return $res[ $key ];
+            }
+            return array();
         }
     }
 

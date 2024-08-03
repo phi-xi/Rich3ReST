@@ -26,66 +26,60 @@
 
     include_once "/script/rich3rest.php";
 
-/*
-        Implement each resource as a child class of RestResource,
-        implement its callback function and define property 'data'
-*/
-
-    class MyResource1 extends RestResource {
-
-        public $data = array(
-            "uri" => "my/box/view",         // full URI is /api/<html|json>/my/box/view
-            "methods" => array( "GET", "POST" ),
-            "data" => array(),
-            "args" => array(
-                "POST" => array(            // POST can receive args from...
-                    "uri" => array(         // ...URI...
-                        "id" => "number"
-                    ),
-                    "body" => array(        // ...or request body
-                        "text" => "string"
-                    )
-                ),
-                "GET" => array(             // GET has no request body, GET args are passed in URI always
+    $CONFIG = array(
+        "uri" => "my/box/view",         // full URI is /api/<html|json>/my/box/view
+        "methods" => array( "GET", "POST" ),
+        "data" => array(),
+        "args" => array(
+            "POST" => array(            // POST can receive args from...
+                "uri" => array(         // ...URI...
                     "id" => "number"
+                ),
+                "body" => array(        // ...or request body
+                    "text" => "string"
                 )
             ),
-            "links" => array(               // if defined, links will be appended to the response of this resource
-                array(
-                    "uri" => "my/box/delete",   // relative from this script file
-                    "rel" => "content",
-                    "method" => "DELETE",
-                    "args" => array(
-                        "id" => "number"        // DELETE has no request body
-                    )
-                ),
-                array(
-                    "uri" => "my/box/msg",
-                    "rel" => "activity",
-                    "method" => "POST",
-                    "args" => array(
-                        "uri" => array(
-                            "id" => "number"
-                        ),
-                        "body" => array(
-                            "text" => "string",
-                            "permanent" => "bool"
-                        )
+            "GET" => array(             // GET has no request body, GET args are passed in URI always
+                "id" => "number"
+            )
+        ),
+        "links" => array(               // if defined, links will be appended to the response of this resource
+            array(
+                "uri" => "my/box/delete",   // relative from this script file
+                "rel" => "content",
+                "method" => "DELETE",
+                "args" => array(
+                    "id" => "number"        // DELETE has no request body
+                )
+            ),
+            array(
+                "uri" => "my/box/msg",
+                "rel" => "activity",
+                "method" => "POST",
+                "args" => array(
+                    "uri" => array(
+                        "id" => "number"
+                    ),
+                    "body" => array(
+                        "text" => "string",
+                        "permanent" => "bool"
                     )
                 )
             )
-        );
+        )
+    );
+    $DIR = new RestResourceDirectory( $CONFIG );
 
-    /*
-            Implement the callback which is executed after
-            successful validation of the arguments passed
-            according to the specification in '$this->data'
-    */
+
+
+
+    class MyResource1 extends RestResource {
 
         public function callback( $api, $method, $data ){
         // get parameter 'id' passed
             $id = $data[ "id" ];
         // append this id to the URIs of the two linked resources 'delete' and 'msg'
+            $this->addParametersToLinkUri( [ $id ], "my/box/view" );
             $this->addParametersToLinkUri( [ $id ], "my/box/delete" );
             $this->addParametersToLinkUri( [ $id ], "my/box/msg" );
         // prepare the response (this one just echoes the data passed)
@@ -100,46 +94,7 @@
     }
 
 
-/*
-        Implement two more RestResource children
-*/
-
     class MyResource2 extends RestResource {
-
-        public $data = array(
-            "uri" => "my/box/msg",
-            "methods" => array( "POST" ),
-            "data" => array(),
-            "args" => array(
-                "POST" => array(
-                    "uri" => array(
-                        "id" => "number"
-                    ),
-                    "body" => array(
-                        "text" => "string",
-                        "permanent" => "bool"
-                    )
-                )
-            ),
-            "links" => array(
-                array(
-                    "uri" => "my/box/view",
-                    "rel" => "content",
-                    "method" => "GET",
-                    "args" => array(
-                        "id" => "number"
-                    )
-                ),
-                array(
-                    "uri" => "my/box/delete",
-                    "rel" => "content",
-                    "method" => "DELETE",
-                    "args" => array(
-                        "id" => "number"
-                    )
-                )
-            )
-        );
 
         public function callback( $api, $method, $data ){
             $id = $data[ "id" ];
@@ -154,42 +109,8 @@
         }
     }
 
-    class MyResource3 extends RestResource {
 
-        public $data = array(
-            "uri" => "my/box/delete",
-            "methods" => array( "DELETE" ),
-            "data" => array(),
-            "args" => array(
-                "DELETE" => array(
-                    "id" => "number"
-                )
-            ),
-            "links" => array(
-                array(
-                    "uri" => "my/box/view",
-                    "rel" => "content",
-                    "method" => "GET",
-                    "args" => array(
-                        "id" => "number"
-                    )
-                ),
-                array(
-                    "uri" => "my/box/msg",
-                    "rel" => "content",
-                    "method" => "POST",
-                    "args" => array(
-                        "uri" => array(
-                            "id" => "number"
-                        ),
-                        "body" => array(
-                            "text" => "string",
-                            "permanent" => "bool"
-                        )
-                    )
-                )
-            )
-        );
+    class MyResource3 extends RestResource {
 
         public function callback( $api, $method, $data ){
             $id = $data[ "id" ];
@@ -205,14 +126,12 @@
     }
 
 
-/*
-        Create a RestAPI instance, add the resources
-        defined above and set the output format
-*/
-    $api = new RestAPI( "/api/pwa" );
-    $api->addResource( new MyResource1() );
-    $api->addResource( new MyResource2() );
-    $api->addResource( new MyResource3() );
+
+
+    $api = new RestAPI( "/api/test" );
+    $api->addResource( new MyResource1( $DIR, "my/box/view" ) );
+    $api->addResource( new MyResource2( $DIR, "my/box/msg" ) );
+    $api->addResource( new MyResource3( $DIR, "my/box/delete" ) );
     $api->execute();
 
 ?>

@@ -79,10 +79,10 @@
         public function setOutputData( $dataArrayOrString ){
             $out = array(
                 "resource" => RestUtils::getRequestURI(),
-                "method" => RestUtils::getRequestMethod()
+                "method" => RestUtils::getRequestMethod(),
+                "data" => RestUtils::removeEmptyArrays( $dataArrayOrString )
             );
-            $this->outputData = RestUtils::removeEmptyArrays( $out );
-            $this->outputData[ "data" ] = $dataArrayOrString;
+            $this->outputData = $out;
         }
         public function setOutputFormat( $format ){
             $this->outputFormat = strtolower( $format );

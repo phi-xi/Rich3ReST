@@ -1,68 +1,153 @@
 <?php
-/*
-    _____    __    ___ __   __ ____   _____             ____ ________
-    ||  \\   []   //// ||   || \\\\\  ||  \\           ///// ||||||||
-    ||   \\      //    ||   ||     \\ ||   \\  ______ //        ||
-    ||   //  || ||     ||   ||     // ||   //  ||//// \\        ||
-    ||__//   || ||     |||||||  ||||  ||__//   ||      \\\\\    ||
-    ||  \\   || ||     ||   ||     \\ ||  \\   ||||        \\   ||
-    ||   \\  ||  \\    ||   ||     // ||   \\  ||          //   ||
-    ||    \\ ||   \\\\ ||   || /////  ||    \\ ||\\\\ //////    ||
+
+    include_once "/var/www/html/script/rich3rest.php";
 
 
-                R i c h 3 R e S T
+    trait Aux {
+
+        public $isLeapYear = true;
+        public $dataDir = "/var/www/html/data";
+        public $blankLog = array(
+            "title" => "",
+            "description" => "",
+            "originDate" => "",
+            "records" => array()
+        );
+
+        public function julianDate(){
+            $date = explode( ".", date( "d.m.y" ) );
+            $d = intval( $date[0] );
+            $m = intval( $date[1] );
+            $monthDays = [ 0, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31 ];
+            if ( $this->isLeapYear ) $monthDays[2] = 29;
+            for ( $i=1; $i < $m; $i++ ) $d += $monthDays[ $i ];
+            return $d;
+        }
+        public function getLog( $logName ){
+            $f = "$this->dataDir/$logName.json";
+            try {
+                $cnt = file_get_contents( $f );
+            } catch( Exception $e ){
+                return false;
+            }
+            if ( !$cnt ) return false;
+            return json_decode( $cnt, true );
+        }
+        public function getLogList(){
+            $dir = scandir( $this->dataDir );
+            $out = array();
+            foreach ( $dir as $logFile ){
+                if ( $logFile[0] != "." ){
+                    $out[] = explode( ".", $logFile )[0];
+                }
+            }
+            return $out;
+        }
+        public function writeIntoLog( $logName, $data ){
+            if ( !$log = $this->getLog( $logName ) ) return false;
+            $logFile = "$this->dataDir/$logName.json";
+            $r = file_put_contents( $logFile, json_encode( $data ), LOCK_EX );
+            return $r;
+        }
+        public function createNewLog( $logName, $logInfo ){
+            $this->blankLog[ "title" ] = $logName;
+            $this->blankLog[ "description" ] = $logInfo;
+            $json = json_encode( $this->blankLog, JSON_FORCE_OBJECT );
+            return file_put_contents( "$this->dataDir/$logName.json", $json, LOCK_EX );
+        }
+        public function extractLogDataType( $logName, $dataType ){
+            $log = $this->getLog( $logName );
+            $out = array();
+            foreach ( $log[ "records" ] as $d => $r ){
+                if ( isset( $r[ $dataType ] )
+                    && count( $r[ $dataType ] ) > 0 ){
+                        $out[ $d ][] = $r[ $dataType ];
+                }
+            }
+            return $out;
+        }
+        public function addLogNameToLinkUris( $logName ){
+            $res = [ "log/get", "list/comments", "list/events", "record/new" ];
+            foreach ( $res as $uri ){
+                $this->addParametersToLinkUri( [ $logName ], $uri );
+            }
+        }
+    }
 
 
-        Copyright 2024 PhiXi (phi.xi@aol.com),
-        released under MIT license (opensource.org/license/mit)
-
-    Implements a JSON ReST API on Richardson Maturity Model level 3;
-    may return resources represented as JSON or HTML.
-    In HTML representation, links are shown as hyperlinks leading
-    to a generic form that allows to interact with the resource using
-    all supported request methods.
-*/
-
-
-    include_once "/script/rich3rest.php";
 
     $CONFIG = array(
-        "uri" => "my/box/view",         // full URI is /api/<html|json>/my/box/view
-        "methods" => array( "GET", "POST" ),
-        "data" => array(),
-        "args" => array(
-            "POST" => array(            // POST can receive args from...
-                "uri" => array(         // ...URI...
-                    "id" => "number"
-                ),
-                "body" => array(        // ...or request body
-                    "text" => "string"
+        array(
+            "uri" => "log/get",
+            "rel" => "Get complete log",
+            "methods" => array( "GET" ),
+            "args" => array(
+                "GET" => array(
+                    "logName" => "string"
                 )
-            ),
-            "GET" => array(             // GET has no request body, GET args are passed in URI always
-                "id" => "number"
             )
         ),
-        "links" => array(               // if defined, links will be appended to the response of this resource
-            array(
-                "uri" => "my/box/delete",   // relative from this script file
-                "rel" => "content",
-                "method" => "DELETE",
-                "args" => array(
-                    "id" => "number"        // DELETE has no request body
-                )
-            ),
-            array(
-                "uri" => "my/box/msg",
-                "rel" => "activity",
-                "method" => "POST",
-                "args" => array(
-                    "uri" => array(
-                        "id" => "number"
-                    ),
+        array(
+            "uri" => "log/new",
+            "rel" => "Create a new log",
+            "methods" => array( "POST" ),
+            "args" => array(
+                "POST" => array(
                     "body" => array(
-                        "text" => "string",
-                        "permanent" => "bool"
+                        "logName" => "string",
+                        "logInfo" => "string"
+                    )
+                )
+            )
+        ),
+        array(
+            "uri" => "list/logs",
+            "rel" => "Get a list with all available logs",
+            "methods" => array( "GET" ),
+            "args" => array()
+        ),
+        array(
+            "uri" => "list/events",
+            "rel" => "Get a list with all events in a given log",
+            "methods" => array( "GET" ),
+            "args" => array(
+                "GET" => array(
+                    "logName" => "string"
+                )
+            )
+        ),
+        array(
+            "uri" => "list/comments",
+            "rel" => "Get a list with all comments in a given log",
+            "methods" => array( "GET" ),
+            "args" => array(
+                "GET" => array(
+                    "logName" => "string"
+                )
+            )
+        ),
+        array(
+            "uri" => "record/get",
+            "rel" => "Get a record",
+            "methods" => array( "GET" ),
+            "args" => array(
+                "GET" => array(
+                    "recordId" => "number"
+                )
+            )
+        ),
+        array(
+            "uri" => "record/new",
+            "rel" => "Create a new record",
+            "methods" => array( "POST" ),
+            "args" => array(
+                "POST" => array(
+                    "body" => array(
+                        "recType" => "string",
+                        "recData" => "string"
+                    ),
+                    "uri" => array(
+                        "logName" => "string"
                     )
                 )
             )
@@ -73,65 +158,122 @@
 
 
 
-    class MyResource1 extends RestResource {
+    class LogGet extends RestResource {
+
+        use Aux;
 
         public function callback( $api, $method, $data ){
-        // get parameter 'id' passed
-            $id = $data[ "id" ];
-        // append this id to the URIs of the two linked resources 'delete' and 'msg'
-            $this->addParametersToLinkUri( [ $id ], "my/box/view" );
-            $this->addParametersToLinkUri( [ $id ], "my/box/delete" );
-            $this->addParametersToLinkUri( [ $id ], "my/box/msg" );
-        // prepare the response (this one just echoes the data passed)
-            $api->setOutputData( array(
-                "method" => $method,
-                "data" => $data,
-                "resource" => $this->data[ "uri" ]
-            ) );
-        // send the response (this will terminate this script!)
+            $logName = $data[ "logName" ];
+            if ( !$logData = $this->getLog( $logName ) ) $api->throwHttpError(404);
+            $this->addLogNameToLinkUris( $logName );
+            $outputData = array(
+                "julianDate" => $this->julianDate(),
+                "logName" => $logName,
+                "logData" => $logData
+            );
+            $api->setOutputData( $outputData );
             $api->sendResponse( $this );
         }
     }
 
+    class LogNew extends RestResource {
 
-    class MyResource2 extends RestResource {
-
-        public function callback( $api, $method, $data ){
-            $id = $data[ "id" ];
-            $this->addParametersToLinkUri( [ $id ], "my/box/view" );
-            $this->addParametersToLinkUri( [ $id ], "my/box/delete" );
-            $api->setOutputData( array(
-                "method" => $method,
-                "data" => $data,
-                "resource" => $this->data[ "uri" ]
-            ) );
-            $api->sendResponse( $this );
-        }
-    }
-
-
-    class MyResource3 extends RestResource {
+        use Aux;
 
         public function callback( $api, $method, $data ){
-            $id = $data[ "id" ];
-            $this->addParametersToLinkUri( [ $id ], "my/box/view" );
-            $this->addParametersToLinkUri( [ $id ], "my/box/msg" );
+            $logName = $data[ "logName" ];
+            $logInfo = $data[ "logInfo" ];
+            if ( $this->getLog( $logName ) ) $api->throwHttpError(409);
+            $this->addLogNameToLinkUris( $logName );
+            if ( !$this->createNewLog( $logName, $logInfo ) ) $api->throwHttpError(500);
             $api->setOutputData( array(
-                "method" => $method,
                 "data" => $data,
-                "resource" => $this->data[ "uri" ]
             ) );
             $api->sendResponse( $this );
         }
     }
 
+    class ListLogs extends RestResource {
+
+        use Aux;
+
+        public function callback( $api, $method, $data ){
+            $logList = $this->getLogList();
+            $api->setOutputData( $logList );
+            $api->sendResponse( $this );
+        }
+    }
+
+    class ListEvents extends RestResource {
+
+        use Aux;
+
+        public function callback( $api, $method, $data ){
+            $logName = $data[ "logName" ];
+            $events = $this->extractLogDataType( $logName, "events" );
+            $this->addLogNameToLinkUris( $logName );
+            $api->setOutputData( $events );
+            $api->sendResponse( $this );
+        }
+    }
+
+    class ListComments extends RestResource {
+
+        use Aux;
+
+        public function callback( $api, $method, $data ){
+            $logName = $data[ "logName" ];
+            $comments = $this->extractLogDataType( $logName, "comments" );
+            $this->addLogNameToLinkUris( $logName );
+            $api->setOutputData( $comments );
+            $api->sendResponse( $this );
+        }
+    }
+
+    class RecordGet extends RestResource {  //TODO
+
+        use Aux;
+
+        public function callback( $api, $method, $data ){
+            $logName = "";
+            $this->addLogNameToLinkUris( $logName );
+            $api->setOutputData( $data );
+            $api->sendResponse( $this );
+        }
+    }
+
+    class RecordNew extends RestResource {
+
+        use Aux;
+
+        public function callback( $api, $method, $data ){
+            $logName = $data[ "logName" ];
+            $recData = $data[ "recData" ];
+            $recType = strtolower( $data[ "recType" ] );
+            if ( !$logData = $this->getLog( $logName ) ) $api->throwHttpError(404);
+            $jdate = $this->julianDate();
+            $data[ "julianDate" ] = $jdate;
+            if ( in_array( $recType, ["event","comment"] ) ){
+                $logData[ "records" ][ $jdate ][ $recType . "s" ][] = $recData;
+            } else {
+                $logData[ "records" ][ $jdate ][ $recType ] = $recData;
+            }
+            if ( !$this->writeIntoLog( $logName, $logData ) ) $api->throwHttpError(404);
+            $this->addLogNameToLinkUris( $logName );
+            $api->setOutputData( $data );
+            $api->sendResponse( $this );
+        }
+    }
 
 
-
-    $api = new RestAPI( "/api/test" );
-    $api->addResource( new MyResource1( $DIR, "my/box/view" ) );
-    $api->addResource( new MyResource2( $DIR, "my/box/msg" ) );
-    $api->addResource( new MyResource3( $DIR, "my/box/delete" ) );
-    $api->execute();
+    $API = new RestAPI( "/api/grow-log" );
+    $API->addResource( new RecordGet( $DIR, "record/get" ) );
+    $API->addResource( new RecordNew( $DIR, "record/new" ) );
+    $API->addResource( new LogGet( $DIR, "log/get" ) );
+    $API->addResource( new LogNew( $DIR, "log/new" ) );
+    $API->addResource( new ListLogs( $DIR, "list/logs" ) );
+    $API->addResource( new ListEvents( $DIR, "list/events" ) );
+    $API->addResource( new ListComments( $DIR, "list/comments" ) );
+    $API->execute();
 
 ?>

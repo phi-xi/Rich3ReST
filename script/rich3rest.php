@@ -49,7 +49,11 @@
             "400" => "Bad Request",
             "403" => "Forbidden",
             "404" => "Not Found",
-            "405" => "Method Not Allowed"
+            "405" => "Method Not Allowed",
+            "409" => "Conflict",
+            "410" => "Gone",
+            "412" => "Precondition Failed",
+            "500" => "Internal Server Error"
         );
         private $configFile = null;
         private $config = array();
@@ -73,8 +77,12 @@
             $this->outputStatus = $status;
         }
         public function setOutputData( $dataArrayOrString ){
-            if ( isset( $dataArrayOrString[ "links" ] ) ) $links = $dataArrayOrString[ "links" ];
-            $this->outputData = $dataArrayOrString;
+            $out = array(
+                "resource" => RestUtils::getRequestURI(),
+                "method" => RestUtils::getRequestMethod(),
+                "data" => $dataArrayOrString
+            );
+            $this->outputData = RestUtils::removeEmptyArrays( $out );
         }
         public function setOutputFormat( $format ){
             $this->outputFormat = strtolower( $format );
@@ -118,14 +126,22 @@
             if ( $isFormReq ){
                 parse_str( $reqBody, $reqParams[ "body" ] );
                 $reqParams = RestUtils::combineUriAndBodyArgs( $reqParams );
-                $reqParams = $this->sanitizeHtmlSpecialChars( $reqParams );
+                $reqParams = RestUtils::sanitizeHtmlSpecialChars( $reqParams );
                 if ( !$resource->inputIsValid( $reqParams, $reqMethod ) ) $this->throwHttpError(400);
             } else {
                 $reqParams[ "body" ] = json_decode( $reqBody, true );
                 $reqParams = RestUtils::combineUriAndBodyArgs( $reqParams );
             }
+            $this->outputData[ "resource" ] = $reqURI;
+            $this->outputData[ "method" ] = $reqMethod;
             $this->outputData[ "links" ] = $resource->getLinks();
             $resource->callback( $this, $reqMethod, $reqParams );
+        }
+        public function throwHttpError( $errorCode ){
+            $this->setOutputStatus( $errorCode );
+            $msg = $this->error[ $errorCode ];
+            $this->setOutputData( $msg );
+            $this->sendResponse();
         }
 
         private function getOutputAsHtml(){
@@ -189,18 +205,6 @@
                 $links[ $i ][ "uri" ] = $uri;
             }
             return $links;
-        }
-        private function sanitizeHtmlSpecialChars( $array ){
-            foreach ( $array as $k => $v ){
-                $array[ $k ] = htmlspecialchars( $v );
-            }
-            return $array;
-        }
-        private function throwHttpError( $errorCode ){
-            $this->setOutputStatus( $errorCode );
-            $msg = $this->error[ $errorCode ];
-            $this->setOutputData( $msg );
-            $this->sendResponse();
         }
     }
 
@@ -401,6 +405,7 @@
             }
             $uri = array();
             if ( $issetUri ) $uri = $array[ "uri" ];
+            if ( strtolower( gettype( $body ) ) == "string" ) $body = json_decode( $body, true );
             foreach ( $body as $argName => $argType ){
                 $out[ $argName ] = $argType;
             }
@@ -411,6 +416,27 @@
         }
         public static function getRequestedResponseFormat(){
             return strtoupper( $_GET[ "p1" ] );
+        }
+        public static function sanitizeHtmlSpecialChars( $array ){
+            foreach ( $array as $k => $v ){
+                $array[ $k ] = htmlspecialchars( $v );
+            }
+            return $array;
+        }
+        public static function removeEmptyArrays( $array ){
+            $out = array();
+            foreach ( $array as $k => $v ){
+                if ( is_array( $v ) ){
+                    if ( count( $v ) > 0 ){
+                        $out[ $k ] = RestUtils::removeEmptyArrays( $v );
+                    }
+                } else {
+                    if ( $v != "" && $v !== null ){
+                        $out[ $k ] = $v;
+                    }
+                }
+            }
+            return $out;
         }
     }
 ?>

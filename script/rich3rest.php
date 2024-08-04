@@ -79,10 +79,10 @@
         public function setOutputData( $dataArrayOrString ){
             $out = array(
                 "resource" => RestUtils::getRequestURI(),
-                "method" => RestUtils::getRequestMethod(),
-                "data" => $dataArrayOrString
+                "method" => RestUtils::getRequestMethod()
             );
             $this->outputData = RestUtils::removeEmptyArrays( $out );
+            $this->outputData[ "data" ] = $dataArrayOrString;
         }
         public function setOutputFormat( $format ){
             $this->outputFormat = strtolower( $format );
@@ -145,7 +145,7 @@
         }
 
         private function getOutputAsHtml(){
-            $html = "<html><head><link rel='stylesheet' href='"
+            $html = "<html><head><meta name='viewport' content='width=device-width,initial-scale=1,user-scalable=0' /><link rel='stylesheet' href='"
                 . $this->config[ "style" ][ "resource" ]
                 . "'></head><body><h3>Status</h3>$this->outputStatus<br><h3>Response</h3>";
             if ( is_string( $this->outputData ) ){

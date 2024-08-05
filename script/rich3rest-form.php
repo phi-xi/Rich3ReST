@@ -52,7 +52,7 @@
     }
     if ( $config !== null ) $cssFile = $config[ "style" ][ "form" ];
 ?>
-<html><head><link rel="stylesheet" href="/style/generic-form.css"></head><body>
+<html><head><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=0"><link rel="stylesheet" href="/style/generic-form.css"></head><body>
 <form method="POST" action="<?php echo($action); ?>">
 <?php
     foreach ( $data["fields"] as $p ){

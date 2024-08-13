@@ -33,7 +33,6 @@
           must be empty array
 */
 
-
     class RestAPI {
 
         private $apiURL = "";
@@ -43,7 +42,9 @@
         private $outputFormat = "json";
         private $outputContentType = array(
             "json" => "application/json",
-            "html" => "text/html"
+            "html" => "text/html",
+            "csv" => "text/csv",
+            "txt" => "text/plain"
         );
         private $error = array(
             "400" => "Bad Request",
@@ -58,7 +59,8 @@
         private $configFile = null;
         private $config = array();
 
-        function __construct( $apiUrl ){
+        function __construct(){
+            $apiUrl = "/api/" . RestUtils::getCurrentWorkDirName();
             if ( substr( $apiUrl, -1 ) == "/" ) $apiUrl = substr( $apiUrl, 0, -1 );
             $this->apiURL = $apiUrl;
             $this->configFile = dirname(__FILE__) . "/rich3rest-config.json";
@@ -95,12 +97,7 @@
                 unset( $this->outputData[ "data" ][ "originalRequestMethod" ] );
                 array_values( $this->outputData[ "data" ] );
             }
-            if ( $this->outputFormat == "json" ){
-                $out = $this->getOutputAsJson();
-            }
-            if ( $this->outputFormat == "html" ){
-                $out = $this->getOutputAsHtml();
-            }
+            $out = $this->getOutputAs();
             http_response_code( $this->outputStatus );
             if ( !headers_sent() ){
                 $cntType = $this->outputContentType[ $this->outputFormat ];
@@ -162,6 +159,21 @@
             $d = $this->outputData;
             $json[ "response" ] = $d;
             return json_encode( $json );
+        }
+        private function getOutputAsCsv( $separator=";" ){
+            return "status $separator$separator"
+                . $this->outputStatus
+                . "\nresponse\n"
+                . RestUtils::convertJsonToCsv( $this->outputData, $separator, 1 );
+        }
+        private function getOutputAsTxt( $separator="\t" ){
+            return RestUtils::convertJsonToTxt( $this->outputData, $separator, 1 );
+        }
+        private function getOutputAs(){
+            if ( $this->outputFormat == "json" ) return $this->getOutputAsJson();
+            if ( $this->outputFormat == "html" ) return $this->getOutputAsHtml();
+            if ( $this->outputFormat == "csv" ) return $this->getOutputAsCsv();
+            if ( $this->outputFormat == "txt" ) return $this->getOutputAsTxt();
         }
         private function getResourceByURI( $uri ){
             foreach ( $this->resources as $r ){
@@ -388,6 +400,36 @@
             $html .= str_repeat( "\t", $indent ) . "</ul>\n";
             return $html;
         }
+        public static function convertJsonToCsv( $array, $separator=";", $indent=0 ){
+            $csv = "";
+            foreach ( $array as $k => $v ){
+                $csv .= str_repeat( $separator, $indent + 1 ) . "$k$separator";
+                if ( is_array( $v ) ){
+                    $csv .= ( "\n" . RestUtils::convertJsonToCsv( $v, $separator, $indent + 1 ) );
+                } else {
+                    $csv .= "$v";
+                }
+                $csv .= "\n";
+            }
+            return $csv;
+        }
+        public static function convertJsonToTxt( $array, $separator="\t", $indent=0 ){
+            $txt = "";
+            foreach ( $array as $k => $v ){
+                $padding = 2;
+                if ( strlen( $k ) >= 8 ) $padding = 1;
+                $txt .= str_repeat( $separator, $indent ) . $k;
+                if ( is_array( $v ) ){
+                    $txt .= ( str_repeat( $separator, $indent + $padding )
+                        . "\n"
+                        . RestUtils::convertJsonToTxt( $v, $separator, $indent + 1 ) );
+                } else {
+                    $txt .= str_repeat( $separator, $padding ) . "$v";
+                }
+                $txt .= "\n";
+            }
+            return $txt;
+        }
         public static function requestOriginIsForm(){
             return isset( $_POST[ "originalRequestMethod" ] );
         }
@@ -438,5 +480,11 @@
             }
             return $out;
         }
+        public static function getCurrentWorkDirName(){
+            $cwdAbs = explode( DIRECTORY_SEPARATOR, getcwd() );
+            $cwd = $cwdAbs[ count( $cwdAbs ) - 1 ];
+            return $cwd;
+        }
     }
+
 ?>
